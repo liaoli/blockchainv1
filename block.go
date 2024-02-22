@@ -39,7 +39,11 @@ func NewBlock(data string, preBlockHash []byte) *Block {
 		Data:       []byte(data),
 	}
 
-	block.SetHash()
+	//block.SetHash()
+	pow := NewProofOfWork(block)
+	hash, nonce := pow.Run()
+	block.Hash = hash
+	block.Nonce = nonce
 	return &block
 }
 
