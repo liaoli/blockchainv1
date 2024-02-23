@@ -58,9 +58,10 @@ func (pow *ProofOfWork) Run() ([]byte, uint64) {
 
 func (pow *ProofOfWork) prepareDate(num uint64) []byte {
 	block := pow.block
+	block.merkleRoot = block.HashTransaction()
 	temp := [][]byte{
 		block.PreHash,
-		block.Data,
+		//block.Data,
 		block.merkleRoot,
 		uint64ToByte(block.Version),
 		uint64ToByte(block.TimeStamp),

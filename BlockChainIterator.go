@@ -12,12 +12,12 @@ type BlockChainIterator struct {
 	current_point []byte
 }
 
-func NewBlockChainIterator(bc *BlockChain) BlockChainIterator {
+func NewBlockChainIterator(bc *BlockChain) *BlockChainIterator {
 	var it BlockChainIterator
 	it.db = bc.db
 	it.current_point = bc.tail
 
-	return it
+	return &it
 }
 
 func (it *BlockChainIterator) GetBlockAnMoveLeft() Block {

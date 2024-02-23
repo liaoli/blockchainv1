@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"github.com/boltdb/bolt"
 	"os"
@@ -21,7 +22,7 @@ const blockchainDBFile = "blockchain.db"
 const bucketBlock = "bucketBlock"
 const lastBlockHashKey = "lastBlockHashKey" //用于访问bolt数据库，得到最好一个区块的哈希值
 
-func NewBlockChain() *BlockChain {
+func NewBlockChain(address string) *BlockChain {
 	//对区块链进行初始化，并把创世块添加到区块链
 	var lastHash []byte
 	//1. 打开数据库 没有的话创建
@@ -51,11 +52,13 @@ func NewBlockChain() *BlockChain {
 				fmt.Println("create  bucket failed", err)
 				os.Exit(1)
 			}
-			genesisblock := NewBlock(genesisInfo, []byte{})
-			bucket.Put(genesisblock.Hash, genesisblock.Serialize())
-			bucket.Put([]byte(lastBlockHashKey), genesisblock.Hash)
+			//创建coinbase交易
+			coinbaseTx := NewCoinbaseTx(address, genesisInfo)
+			genesisBlock := NewBlock([]*Transaction{coinbaseTx}, []byte{})
+			bucket.Put(genesisBlock.Hash, genesisBlock.Serialize())
+			bucket.Put([]byte(lastBlockHashKey), genesisBlock.Hash)
 
-			lastHash = genesisblock.Hash
+			lastHash = genesisBlock.Hash
 		} else {
 			lastHash = bucket.Get([]byte(lastBlockHashKey))
 		}
@@ -64,7 +67,38 @@ func NewBlockChain() *BlockChain {
 	return &BlockChain{db, lastHash}
 }
 
-func (bc *BlockChain) AddBlock(data string) {
+func GetBlockChainInstance() (*BlockChain, error) {
+	if !isFileExist(blockchainDBFile) {
+		fmt.Println("区块链文件不存在，请先创建")
+		return nil, errors.New("区块链文件不存在，请先创建")
+	}
+
+	var lastHash []byte //内存中最后一个区块的哈希值
+
+	//两个功能
+	//如果区块链不存在，则创建，同时返回blockchain的示例
+	db, err := bolt.Open(blockchainDBFile, 0600, nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	//区块链存在则直接返回blockchain对象
+	db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte(bucketBlock))
+		if bucket == nil {
+			return errors.New("bucket 不存在")
+		} else {
+			lastHash = bucket.Get([]byte(lastBlockHashKey))
+		}
+
+		return nil
+	})
+
+	bc := BlockChain{db: db, tail: lastHash}
+	return &bc, nil
+}
+func (bc *BlockChain) AddBlock(tx []*Transaction) {
 
 	//1.产生区块链
 	//  数据和区块的哈希值
@@ -77,7 +111,7 @@ func (bc *BlockChain) AddBlock(data string) {
 	//bc.Blocks = append(bc.Blocks, block)
 	//获取最后一个hash区块
 	lastBlockHash := bc.tail
-	newBlock := NewBlock(data, lastBlockHash)
+	newBlock := NewBlock(tx, lastBlockHash)
 
 	bc.db.Update(func(tx *bolt.Tx) error {
 
@@ -93,4 +127,79 @@ func (bc *BlockChain) AddBlock(data string) {
 		return nil
 	})
 
+}
+
+func (bc *BlockChain) NewIterator() *BlockChainIterator {
+	return NewBlockChainIterator(bc)
+}
+
+//UTXOInfo 包含output本身，位置信息
+type UTXOInfo struct {
+	//交易id
+	TxId []byte
+	//索引值
+	index int64
+	//output
+	TXOutput
+}
+
+//获取指定地址的金额,实现遍历账本的通用函数
+//给定一个地址，返回所有的utxo
+
+//FindMyUTXO 返回制定地址能够支配的utxo所在的交易集合
+func (bc *BlockChain) FindMyUTXO(address string) []UTXOInfo {
+	//var transactions []Transaction
+	//var outputs []UTXOInfo
+	var utxoInfos []UTXOInfo
+	spentUTXOs := make(map[string][]int64)
+	it := bc.NewIterator()
+	for {
+		//1.遍历区块
+		block := it.GetBlockAnMoveLeft()
+		//2.遍历交易
+		for _, tx := range block.Transactions {
+			//3.遍历outputs 判断这个output的锁定脚本是否为我们的目标地址
+		LABEL:
+			for outputIndex, output := range tx.TXOutputs {
+
+				if output.ScriptPubKey == address {
+					fmt.Println("outputIndex:", outputIndex)
+					//开始过滤
+					currentTxid := string(tx.TXID)
+
+					indexArray := spentUTXOs[currentTxid]
+
+					if len(indexArray) != 0 {
+						for _, spendIndex := range indexArray {
+							if outputIndex == int(spendIndex) {
+								goto LABEL
+							}
+						}
+					}
+					//outputs = append(outputs, output)
+					utxoInfo := UTXOInfo{tx.TXID, int64(outputIndex), output}
+
+					utxoInfos = append(utxoInfos, utxoInfo)
+				}
+
+			}
+
+			for inputIndex, input := range tx.TXInputs {
+				if input.ScriptSig == address {
+
+					fmt.Println("inputIndex:", inputIndex)
+					spentKey := string(input.TXID)
+					spentUTXOs[spentKey] = append(spentUTXOs[spentKey], input.VoutIndex)
+				}
+
+			}
+
+		}
+
+		if len(block.PreHash) == 0 {
+			break
+		}
+	}
+
+	return utxoInfos
 }
