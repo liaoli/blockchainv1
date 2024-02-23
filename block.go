@@ -10,6 +10,7 @@ import (
 )
 
 type Block struct {
+	//区块头
 	//版本号
 	Version uint64
 	//前区块哈希值
@@ -24,11 +25,14 @@ type Block struct {
 	Nonce uint64
 	//当前区块哈希值(为了⽅便实现，所以将区块的哈希值放到了区块中)	Hash []byte
 	Hash []byte
+
+	//区块体
 	//区块数据
-	Data []byte
+	//Data []byte
+	Transactions []*Transaction
 }
 
-func NewBlock(data string, preBlockHash []byte) *Block {
+func NewBlock(txs []*Transaction, preBlockHash []byte) *Block {
 	block := Block{
 		Version:    00,
 		PreHash:    preBlockHash,
@@ -37,7 +41,8 @@ func NewBlock(data string, preBlockHash []byte) *Block {
 		Difficulty: 100,
 		Nonce:      100,
 		Hash:       []byte{},
-		Data:       []byte(data),
+		//Data:       []byte(data),
+		Transactions: txs,
 	}
 
 	//block.SetHash()
@@ -85,7 +90,7 @@ func DeSerialize(data []byte) Block {
 }
 
 //产⽣创世块
-func GenesisBlock(data string, prvBlockHash []byte) *Block {
+func GenesisBlock(data []*Transaction, prvBlockHash []byte) *Block {
 	return NewBlock(data, prvBlockHash)
 }
 
@@ -103,7 +108,7 @@ func (block *Block) SetHash() {
 	//用Join 替代
 	temp := [][]byte{
 		block.PreHash,
-		block.Data,
+		//block.Data,
 		block.merkleRoot,
 		uint64ToByte(block.Version),
 		uint64ToByte(block.TimeStamp),
@@ -116,4 +121,20 @@ func (block *Block) SetHash() {
 	//3.把hash 添加到 Hash字段
 	block.Hash = hash[:]
 
+}
+
+//HashTransaction函数实现
+//这个函数是为了生成Merkel Tree Root哈希值，正常的生成过程是使用所有交易的哈希值生成一个平衡
+//二叉树，此处，为了简化代码，我们目前直接将区块中交易的哈希值进行拼接后进行哈希操作即可。
+
+func (block Block) HashTransaction() []byte {
+	var temp [][]byte
+	for _, tx := range block.Transactions {
+		temp = append(temp, tx.TXID)
+	}
+
+	data := bytes.Join(temp, []byte{})
+	hash := sha256.Sum256(data)
+
+	return hash[:]
 }

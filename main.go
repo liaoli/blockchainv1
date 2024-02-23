@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/boltdb/bolt"
 	"os"
-	"time"
 )
 
 func main() {
@@ -14,33 +13,34 @@ func main() {
 	//fmt.Printf("Hash : %x\n", block.Hash)
 	//fmt.Printf("Data : %s\n", block.Data)
 
-	bc := NewBlockChain()
-	bc.AddBlock("aa send 1 btc to c")
-	bc.AddBlock("bb send 1 btc to c")
+	//bc := NewBlockChain("test")
+	cli := CLI{}
+	cli.Run()
+	//cli.getBalance("liaoli")
 
-	it := NewBlockChainIterator(bc)
-
-	for {
-		block := it.GetBlockAnMoveLeft()
-		fmt.Println("============== ===============")
-		fmt.Printf("PreHash : %x\n", block.PreHash)
-		fmt.Printf("Hash : %x\n", block.Hash)
-		fmt.Printf("Data : %s\n", block.Data)
-		fmt.Printf("merkleRoot : %x\n", block.merkleRoot)
-		fmt.Printf("Nonce : %d\n", block.Nonce)
-		fmt.Printf("Version : %d\n", block.Version)
-		//时间格式化
-		timeFormat := time.Unix(int64(block.TimeStamp), 0).Format("2006-01-02 15:04:05")
-		//fmt.Printf("TimeStamp : %d\n", block.TimeStamp)
-		fmt.Printf("TimeStamp : %s\n", timeFormat)
-		fmt.Printf("Difficulty : %d\n", block.Difficulty)
-		pow := NewProofOfWork(block)
-		fmt.Printf("IsValid:%v \n", pow.IsValid())
-
-		if len(block.PreHash) == 0 {
-			break
-		}
-	}
+	//it := NewBlockChainIterator(bc)
+	//
+	//for {
+	//	block := it.GetBlockAnMoveLeft()
+	//	fmt.Println("============== ===============")
+	//	fmt.Printf("PreHash : %x\n", block.PreHash)
+	//	fmt.Printf("Hash : %x\n", block.Hash)
+	//	fmt.Printf("Data : %s\n", block.Data)
+	//	fmt.Printf("merkleRoot : %x\n", block.merkleRoot)
+	//	fmt.Printf("Nonce : %d\n", block.Nonce)
+	//	fmt.Printf("Version : %d\n", block.Version)
+	//	//时间格式化
+	//	timeFormat := time.Unix(int64(block.TimeStamp), 0).Format("2006-01-02 15:04:05")
+	//	//fmt.Printf("TimeStamp : %d\n", block.TimeStamp)
+	//	fmt.Printf("TimeStamp : %s\n", timeFormat)
+	//	fmt.Printf("Difficulty : %d\n", block.Difficulty)
+	//	pow := NewProofOfWork(block)
+	//	fmt.Printf("IsValid:%v \n", pow.IsValid())
+	//
+	//	if len(block.PreHash) == 0 {
+	//		break
+	//	}
+	//}
 	//
 	//for i, block := range bc.Blocks {
 	//	fmt.Println("==============block height：", i, "===============")
