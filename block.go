@@ -3,10 +3,11 @@ package main
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/gob"
+	"fmt"
+	"os"
 	"time"
 )
-
-const genesisInfo = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks"
 
 type Block struct {
 	//版本号
@@ -45,6 +46,42 @@ func NewBlock(data string, preBlockHash []byte) *Block {
 	block.Hash = hash
 	block.Nonce = nonce
 	return &block
+}
+
+func (block *Block) Serialize() []byte {
+	//1.将block数据转换成流字节
+	var buffer bytes.Buffer
+	//创建一个编码器
+	encoder := gob.NewEncoder(&buffer)
+	//编码，将block编码城buffer
+	err := encoder.Encode(block)
+
+	if err != nil {
+		fmt.Println("encode fialed", err)
+		os.Exit(1)
+	}
+	return buffer.Bytes()
+
+}
+
+func DeSerialize(data []byte) Block {
+	var block Block
+	var buffer bytes.Buffer
+	_, err := buffer.Write(data)
+	if err != nil {
+		fmt.Println("buffer.Write fialed", err)
+		os.Exit(1)
+	}
+	decoder := gob.NewDecoder(&buffer)
+
+	err = decoder.Decode(&block)
+
+	if err != nil {
+		fmt.Println("decode fialed", err)
+		os.Exit(1)
+	}
+
+	return block
 }
 
 //产⽣创世块
