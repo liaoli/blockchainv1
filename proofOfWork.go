@@ -12,13 +12,13 @@ import (
 //- ⽬标值
 type ProofOfWork struct {
 	//区块数据
-	block Block
+	block *Block
 	//⽬标值，先写成固定的值，后⾯再进⾏推到演算。
 	target big.Int
 }
 
 // 创建工作量证明的函数
-func NewProofOfWork(block Block) *ProofOfWork {
+func NewProofOfWork(block *Block) *ProofOfWork {
 	pow := ProofOfWork{
 		block: block,
 	}
@@ -58,11 +58,11 @@ func (pow *ProofOfWork) Run() ([]byte, uint64) {
 
 func (pow *ProofOfWork) prepareDate(num uint64) []byte {
 	block := pow.block
-	block.merkleRoot = block.HashTransaction()
+	//block.HashTransactionMerkleRoot()
 	temp := [][]byte{
 		block.PreHash,
 		//block.Data,
-		block.merkleRoot,
+		block.MerkleRoot,
 		uint64ToByte(block.Version),
 		uint64ToByte(block.TimeStamp),
 		uint64ToByte(block.Difficulty),

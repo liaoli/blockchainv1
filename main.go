@@ -26,7 +26,7 @@ func main() {
 	//	fmt.Printf("PreHash : %x\n", block.PreHash)
 	//	fmt.Printf("Hash : %x\n", block.Hash)
 	//	fmt.Printf("Data : %s\n", block.Data)
-	//	fmt.Printf("merkleRoot : %x\n", block.merkleRoot)
+	//	fmt.Printf("MerkleRoot : %x\n", block.MerkleRoot)
 	//	fmt.Printf("Nonce : %d\n", block.Nonce)
 	//	fmt.Printf("Version : %d\n", block.Version)
 	//	//时间格式化
@@ -47,7 +47,7 @@ func main() {
 	//	fmt.Printf("PreHash : %x\n", block.PreHash)
 	//	fmt.Printf("Hash : %x\n", block.Hash)
 	//	fmt.Printf("Data : %s\n", block.Data)
-	//	fmt.Printf("merkleRoot : %x\n", block.merkleRoot)
+	//	fmt.Printf("MerkleRoot : %x\n", block.MerkleRoot)
 	//	fmt.Printf("Nonce : %d\n", block.Nonce)
 	//	fmt.Printf("Version : %d\n", block.Version)
 	//	//时间格式化

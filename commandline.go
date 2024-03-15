@@ -100,7 +100,7 @@ func (cli *CLI) PrintChain() {
 		fmt.Printf("PreHash : %x\n", block.PreHash)
 		fmt.Printf("Hash : %x\n", block.Hash)
 		//fmt.Printf("Data : %s\n", block.Data)
-		fmt.Printf("merkleRoot : %x\n", block.merkleRoot)
+		fmt.Printf("MerkleRoot : %x\n", block.MerkleRoot)
 		fmt.Printf("Nonce : %d\n", block.Nonce)
 		fmt.Printf("Version : %d\n", block.Version)
 		//时间格式化
@@ -108,7 +108,7 @@ func (cli *CLI) PrintChain() {
 		//fmt.Printf("TimeStamp : %d\n", block.TimeStamp)
 		fmt.Printf("TimeStamp : %s\n", timeFormat)
 		fmt.Printf("Difficulty : %d\n", block.Difficulty)
-		pow := NewProofOfWork(block)
+		pow := NewProofOfWork(&block)
 		fmt.Printf("IsValid:%v \n", pow.IsValid())
 
 		if len(block.PreHash) == 0 {
