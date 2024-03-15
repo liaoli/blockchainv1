@@ -17,6 +17,7 @@ const Usage = `
     ./block printChain "print block Chain"
     ./block getBalance <address> "Get balance by address"
     ./block send <From> <To> <Amount> <Miner> <Data> "transaction"
+    ./block createWallet "创建钱包"
 `
 
 func (cli *CLI) Run() {
@@ -68,6 +69,14 @@ func (cli *CLI) Run() {
 		data := os.Args[6]
 
 		cli.send(from, to, amount, miner, data)
+
+	case "createWallet":
+		fmt.Println("createWallet")
+
+		cli.CreateWallet()
+	default:
+		fmt.Println(Usage)
+		return
 	}
 }
 
@@ -173,4 +182,15 @@ func (cli *CLI) send(from, to string, amount float64, miner, data string) {
 	}
 	fmt.Println("添加区块成功，交易成果")
 
+}
+
+func (cli *CLI) CreateWallet() {
+	wm := NewWalletManager()
+
+	address := wm.CreateWallet()
+	if len(address) == 0 {
+		fmt.Println("创建钱包失败")
+		return
+	}
+	fmt.Println("创建钱包成功 address:", address)
 }

@@ -1,8 +1,13 @@
 package main
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/sha256"
 	"fmt"
 	"github.com/boltdb/bolt"
+	"math/big"
 	"os"
 )
 
@@ -16,6 +21,8 @@ func main() {
 	//bc := NewBlockChain("test")
 	cli := CLI{}
 	cli.Run()
+
+	//ecdsaDemo()
 	//cli.getBalance("liaoli")
 
 	//it := NewBlockChainIterator(bc)
@@ -97,4 +104,45 @@ func boltDemo() {
 		fmt.Println("bbbb => ", string(value))
 		return nil
 	})
+}
+
+//go语言只提供了签名校验，未提供加解密
+//创建私钥
+//私钥得到公钥
+//私钥签名
+//公钥验证
+
+func ecdsaDemo() {
+	curve := elliptic.P256()
+	//创建私钥
+	priKey, err := ecdsa.GenerateKey(curve, rand.Reader)
+
+	if err != nil {
+		fmt.Println("ecdsa.GenerateKey err", err)
+	}
+
+	//fmt.Println("priKey=", priKey)
+	//私钥得到公钥
+	pubKey := priKey.PublicKey
+	data := "hello world"
+	hash := sha256.Sum256([]byte(data))
+	//私钥签名
+	r, s, err := ecdsa.Sign(rand.Reader, priKey, hash[:])
+	if err != nil {
+		fmt.Println("ecdsa.Sign err", err)
+		return
+	}
+
+	signature := append(r.Bytes(), s.Bytes()...)
+	//传输。。。
+	//
+
+	//公钥验证
+	//在对端将r,s取出来
+	var r1, s1 big.Int
+	r1.SetBytes(signature[:len(signature)/2])
+	s1.SetBytes(signature[len(signature)/2:])
+	reuslt := ecdsa.Verify(&pubKey, hash[:], &r1, &s1)
+
+	fmt.Println("ecdsa.Verify result=", reuslt)
 }
