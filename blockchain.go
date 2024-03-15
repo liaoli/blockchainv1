@@ -23,6 +23,12 @@ const bucketBlock = "bucketBlock"
 const lastBlockHashKey = "lastBlockHashKey" //用于访问bolt数据库，得到最好一个区块的哈希值
 
 func NewBlockChain(address string) *BlockChain {
+
+	//1.区块拉链不存在，创建
+	if isFileExist(blockchainDBFile) {
+		fmt.Println("区块链文件已经存在")
+		return nil
+	}
 	//对区块链进行初始化，并把创世块添加到区块链
 	var lastHash []byte
 	//1. 打开数据库 没有的话创建

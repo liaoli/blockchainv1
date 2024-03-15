@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 )
 
 type CLI struct {
@@ -84,33 +85,46 @@ func (cli *CLI) addBlock(data string) {
 }
 
 func (cli *CLI) PrintChain() {
-	//it := NewBlockChainIterator(cli.bc)
-	//
-	//for {
-	//	block := it.GetBlockAnMoveLeft()
-	//	fmt.Println("============== ===============")
-	//	fmt.Printf("PreHash : %x\n", block.PreHash)
-	//	fmt.Printf("Hash : %x\n", block.Hash)
-	//	//fmt.Printf("Data : %s\n", block.Data)
-	//	fmt.Printf("merkleRoot : %x\n", block.merkleRoot)
-	//	fmt.Printf("Nonce : %d\n", block.Nonce)
-	//	fmt.Printf("Version : %d\n", block.Version)
-	//	//时间格式化
-	//	timeFormat := time.Unix(int64(block.TimeStamp), 0).Format("2006-01-02 15:04:05")
-	//	//fmt.Printf("TimeStamp : %d\n", block.TimeStamp)
-	//	fmt.Printf("TimeStamp : %s\n", timeFormat)
-	//	fmt.Printf("Difficulty : %d\n", block.Difficulty)
-	//	pow := NewProofOfWork(block)
-	//	fmt.Printf("IsValid:%v \n", pow.IsValid())
-	//
-	//	if len(block.PreHash) == 0 {
-	//		break
-	//	}
-	//}
+	bc, err := GetBlockChainInstance()
+
+	if err != nil {
+		fmt.Println("print err:", err)
+		return
+	}
+	defer bc.db.Close()
+	it := bc.NewIterator()
+
+	for {
+		block := it.GetBlockAnMoveLeft()
+		fmt.Println("============== ===============")
+		fmt.Printf("PreHash : %x\n", block.PreHash)
+		fmt.Printf("Hash : %x\n", block.Hash)
+		//fmt.Printf("Data : %s\n", block.Data)
+		fmt.Printf("merkleRoot : %x\n", block.merkleRoot)
+		fmt.Printf("Nonce : %d\n", block.Nonce)
+		fmt.Printf("Version : %d\n", block.Version)
+		//时间格式化
+		timeFormat := time.Unix(int64(block.TimeStamp), 0).Format("2006-01-02 15:04:05")
+		//fmt.Printf("TimeStamp : %d\n", block.TimeStamp)
+		fmt.Printf("TimeStamp : %s\n", timeFormat)
+		fmt.Printf("Difficulty : %d\n", block.Difficulty)
+		pow := NewProofOfWork(block)
+		fmt.Printf("IsValid:%v \n", pow.IsValid())
+
+		if len(block.PreHash) == 0 {
+			break
+		}
+	}
 }
 
 func (cli *CLI) getBalance(address string) {
-	bc, _ := GetBlockChainInstance()
+	bc, err := GetBlockChainInstance()
+
+	if err != nil {
+		fmt.Println("print err:", err)
+		return
+	}
+	defer bc.db.Close()
 	utxos := bc.FindMyUTXO(address)
 	total := 0.0
 	for _, utxo := range utxos {
@@ -126,7 +140,13 @@ func (cli *CLI) send(from, to string, amount float64, miner, data string) {
 	//fmt.Println("amount:", amount)
 	//fmt.Println("miner:", miner)
 	//fmt.Println("data:", data)
-	bc, _ := GetBlockChainInstance()
+	bc, err := GetBlockChainInstance()
+
+	if err != nil {
+		fmt.Println("print err:", err)
+		return
+	}
+	defer bc.db.Close()
 	//每次send时，都会添加一个块，
 	//区块：创建挖矿交易，创建普通交易
 	//执行addblock
@@ -146,7 +166,7 @@ func (cli *CLI) send(from, to string, amount float64, miner, data string) {
 		fmt.Println("找到一笔无效交易")
 	}
 
-	err := bc.AddBlock(txs)
+	err = bc.AddBlock(txs)
 
 	if err != nil {
 		fmt.Println("添加区块失败，交易失败")
