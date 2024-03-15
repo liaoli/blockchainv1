@@ -127,3 +127,13 @@ func NewCoinbaseTx(address string, data string) *Transaction {
 	return &txTmp
 
 }
+
+func (tx *Transaction) isCoinBaseTx() bool {
+
+	inputs := tx.TXInputs
+	//input个数为1，id为nil，索引为-1
+	if len(inputs) == 1 && inputs[0].TXID == nil && inputs[0].VoutIndex == -1 {
+		return true
+	}
+	return false
+}

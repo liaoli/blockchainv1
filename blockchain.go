@@ -190,15 +190,17 @@ func (bc *BlockChain) FindMyUTXO(address string) []UTXOInfo {
 				}
 
 			}
+			if !tx.isCoinBaseTx() {
+				//非挖矿交易才遍历
+				for inputIndex, input := range tx.TXInputs {
+					if input.ScriptSig == address {
 
-			for inputIndex, input := range tx.TXInputs {
-				if input.ScriptSig == address {
+						fmt.Println("inputIndex:", inputIndex)
+						spentKey := string(input.TXID)
+						spentUTXOs[spentKey] = append(spentUTXOs[spentKey], input.VoutIndex)
+					}
 
-					fmt.Println("inputIndex:", inputIndex)
-					spentKey := string(input.TXID)
-					spentUTXOs[spentKey] = append(spentUTXOs[spentKey], input.VoutIndex)
 				}
-
 			}
 
 		}
