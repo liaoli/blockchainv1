@@ -12,9 +12,9 @@ import (
 
 //-结构定义
 type Wallet struct {
-	priKey *ecdsa.PrivateKey
+	PriKey *ecdsa.PrivateKey
 
-	pubKey []byte // xy 拼接而成 r,s
+	PubKey []byte // xy 拼接而成 r,s
 }
 
 //-创建密钥对
@@ -35,7 +35,7 @@ func NewWalletKeyPair() *Wallet {
 	pubKey := append(pubKeyRaw.X.Bytes(), pubKeyRaw.Y.Bytes()...)
 	//创建wallet钱包
 
-	wallet := Wallet{priKey: priKey, pubKey: pubKey}
+	wallet := Wallet{PriKey: priKey, PubKey: pubKey}
 
 	return &wallet
 }
@@ -43,7 +43,7 @@ func NewWalletKeyPair() *Wallet {
 //-根据私钥生成地址
 func (w *Wallet) getAddress() string {
 	//公钥
-	pubKey := w.pubKey
+	pubKey := w.PubKey
 	hash1 := sha256.Sum256(pubKey)
 	//hash160处理
 	//hasher := crypto.RIPEMD160.New()

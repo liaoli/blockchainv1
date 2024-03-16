@@ -21,7 +21,7 @@ func main() {
 	//bc := NewBlockChain("test")
 	cli := CLI{}
 	cli.Run()
-
+	//cli.CreateWallet()
 	//ecdsaDemo()
 	//cli.getBalance("liaoli")
 
@@ -121,7 +121,7 @@ func ecdsaDemo() {
 		fmt.Println("ecdsa.GenerateKey err", err)
 	}
 
-	//fmt.Println("priKey=", priKey)
+	//fmt.Println("PriKey=", PriKey)
 	//私钥得到公钥
 	pubKey := priKey.PublicKey
 	data := "hello world"

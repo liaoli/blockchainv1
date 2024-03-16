@@ -18,6 +18,7 @@ const Usage = `
     ./block getBalance <address> "Get balance by address"
     ./block send <From> <To> <Amount> <Miner> <Data> "transaction"
     ./block createWallet "创建钱包"
+    ./block listAddress "列举所有的钱包地址"
 `
 
 func (cli *CLI) Run() {
@@ -74,6 +75,8 @@ func (cli *CLI) Run() {
 		fmt.Println("createWallet")
 
 		cli.CreateWallet()
+	case "listAddress":
+		cli.listAddress()
 	default:
 		fmt.Println(Usage)
 		return
@@ -186,11 +189,28 @@ func (cli *CLI) send(from, to string, amount float64, miner, data string) {
 
 func (cli *CLI) CreateWallet() {
 	wm := NewWalletManager()
-
+	if wm == nil {
+		fmt.Println("CreateWallet 失败")
+		return
+	}
 	address := wm.CreateWallet()
 	if len(address) == 0 {
 		fmt.Println("创建钱包失败")
 		return
 	}
 	fmt.Println("创建钱包成功 address:", address)
+}
+
+func (cli *CLI) listAddress() {
+	wm := NewWalletManager()
+	if wm == nil {
+		fmt.Println("CreateWallet 失败")
+		return
+	}
+	addresses := wm.listAddress()
+
+	for _, address := range addresses {
+		fmt.Println(address)
+	}
+
 }
