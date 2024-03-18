@@ -34,6 +34,7 @@ func (cli *CLI) Run() {
 		if len(os.Args) != 3 {
 			fmt.Println("输入参数无效，请检查！")
 			fmt.Println(Usage)
+			return
 		}
 		address := os.Args[2]
 		cli.createBlockChain(address)
@@ -84,8 +85,9 @@ func (cli *CLI) Run() {
 }
 
 func (cli CLI) createBlockChain(address string) {
-	if address == "" {
-		fmt.Println("传入的地址无效:", address)
+	if !isValidAddress(address) {
+		fmt.Println("无效地址")
+		return
 	}
 
 	NewBlockChain(address)
@@ -130,6 +132,11 @@ func (cli *CLI) PrintChain() {
 }
 
 func (cli *CLI) getBalance(address string) {
+
+	if !isValidAddress(address) {
+		fmt.Println("无效地址")
+		return
+	}
 	bc, err := GetBlockChainInstance()
 
 	if err != nil {
@@ -137,7 +144,8 @@ func (cli *CLI) getBalance(address string) {
 		return
 	}
 	defer bc.db.Close()
-	utxos := bc.FindMyUTXO(address)
+	pubKeyHash := getPubKeyHashFromAddress(address)
+	utxos := bc.FindMyUTXO(pubKeyHash)
 	total := 0.0
 	for _, utxo := range utxos {
 		total += utxo.Value
@@ -152,6 +160,22 @@ func (cli *CLI) send(from, to string, amount float64, miner, data string) {
 	//fmt.Println("amount:", amount)
 	//fmt.Println("miner:", miner)
 	//fmt.Println("data:", data)
+
+	if !isValidAddress(from) {
+		fmt.Println("form 为无效地址：", from)
+		return
+	}
+
+	if !isValidAddress(to) {
+		fmt.Println("to 为无效地址：", to)
+		return
+	}
+
+	if !isValidAddress(miner) {
+		fmt.Println("miner 为无效地址：", miner)
+		return
+	}
+
 	bc, err := GetBlockChainInstance()
 
 	if err != nil {

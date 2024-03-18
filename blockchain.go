@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"github.com/boltdb/bolt"
@@ -154,7 +155,7 @@ type UTXOInfo struct {
 //给定一个地址，返回所有的utxo
 
 //FindMyUTXO 返回制定地址能够支配的utxo所在的交易集合
-func (bc *BlockChain) FindMyUTXO(address string) []UTXOInfo {
+func (bc *BlockChain) FindMyUTXO(pubKeyHash []byte) []UTXOInfo {
 	//var transactions []Transaction
 	//var outputs []UTXOInfo
 	var utxoInfos []UTXOInfo
@@ -169,7 +170,8 @@ func (bc *BlockChain) FindMyUTXO(address string) []UTXOInfo {
 		LABEL:
 			for outputIndex, output := range tx.TXOutputs {
 
-				if output.ScriptPubKey == address {
+				//if output.ScriptPubKeyHash == pubKeyHash {
+				if bytes.Equal(output.ScriptPubKeyHash, pubKeyHash) {
 					fmt.Println("outputIndex:", outputIndex)
 					//开始过滤
 					currentTxid := string(tx.TXID)
@@ -193,8 +195,7 @@ func (bc *BlockChain) FindMyUTXO(address string) []UTXOInfo {
 			if !tx.isCoinBaseTx() {
 				//非挖矿交易才遍历
 				for inputIndex, input := range tx.TXInputs {
-					if input.ScriptSig == address {
-
+					if bytes.Equal(getPubKeyHashFromPubKey(input.pubKey), pubKeyHash) /*付款人的公钥*/ {
 						fmt.Println("inputIndex:", inputIndex)
 						spentKey := string(input.TXID)
 						spentUTXOs[spentKey] = append(spentUTXOs[spentKey], input.VoutIndex)
@@ -213,13 +214,13 @@ func (bc *BlockChain) FindMyUTXO(address string) []UTXOInfo {
 	return utxoInfos
 }
 
-func (bc *BlockChain) FindNeedUTXO(from string, amount float64) (map[string][]int64, float64) {
+func (bc *BlockChain) FindNeedUTXO(pubKeyHash []byte, amount float64) (map[string][]int64, float64) {
 
 	//两个返回值
 	retMap := make(map[string][]int64)
 	var retValue float64
 	//1.遍历账本，找到所有utxo
-	utxoInfos := bc.FindMyUTXO(from)
+	utxoInfos := bc.FindMyUTXO(pubKeyHash)
 	//2.遍历utxo，统计当前总额，与amount比较
 	for _, utxoInfo := range utxoInfos {
 		//统计当前utxo的总和
