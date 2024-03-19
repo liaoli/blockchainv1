@@ -20,11 +20,11 @@ func main() {
 
 	//bc := NewBlockChain("test")
 	cli := CLI{}
-	//cli.Run()
+	cli.Run()
 	//cli.CreateWallet()
 	//ecdsaDemo()
 	//cli.getBalance("liaoli")
-	cli.send("1DhvU59canfr4SwYLFuCA3qao7VLdNN4nE", "12EAzsXx9vWhLvhiNaA6kufwEc4csKEcdd", 4.5, "1DhvU59canfr4SwYLFuCA3qao7VLdNN4nE", "ok")
+	//cli.send("1DhvU59canfr4SwYLFuCA3qao7VLdNN4nE", "12EAzsXx9vWhLvhiNaA6kufwEc4csKEcdd", 4.5, "1DhvU59canfr4SwYLFuCA3qao7VLdNN4nE", "ok")
 	//it := NewBlockChainIterator(bc)
 	//
 	//for {

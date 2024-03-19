@@ -118,6 +118,18 @@ func (bc *BlockChain) AddBlock(tx []*Transaction) error {
 	//block := NewBlock(data, prevBlockHash)
 	//bc.Blocks = append(bc.Blocks, block)
 	//获取最后一个hash区块
+
+	txs := []*Transaction{}
+	fmt.Println("添加区块前进行校验")
+
+	for _, tx := range tx {
+		if bc.verifyTransaction(tx) {
+			txs = append(txs, tx)
+		} else {
+			fmt.Printf("当前交易校验失败%x", tx.TXID)
+		}
+	}
+
 	lastBlockHash := bc.tail
 	newBlock := NewBlock(tx, lastBlockHash)
 
@@ -237,6 +249,34 @@ func (bc *BlockChain) FindNeedUTXO(pubKeyHash []byte, amount float64) (map[strin
 	}
 
 	return retMap, retValue
+}
+
+//校验单笔交易
+func (bc BlockChain) verifyTransaction(tx *Transaction) bool {
+
+	fmt.Println("开始校验交易")
+
+	if tx.isCoinBaseTx() {
+		fmt.Println("发现挖矿交易，无需校验!")
+		return true
+	}
+	//根据传递进来的tx 得到所有需要的前交易preTxs
+	preTxs := make(map[string]*Transaction)
+	//遍历账本，找到所有需要的交易集合
+	for _, input := range tx.TXInputs {
+		pretx := bc.findTransaction(input.TXID)
+
+		if pretx == nil {
+			fmt.Println("没有找到有效引用的交易")
+			return false
+		}
+
+		fmt.Println("到有效引用的交易")
+		//容易错误：tx.TXID
+		preTxs[string(input.TXID)] = pretx
+	}
+	return tx.verify(preTxs)
+
 }
 
 //交易签名函数

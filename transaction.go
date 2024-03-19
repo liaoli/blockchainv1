@@ -3,10 +3,12 @@ package main
 import (
 	"bytes"
 	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/gob"
 	"fmt"
+	"math/big"
 	"time"
 )
 
@@ -257,4 +259,55 @@ func (tx *Transaction) trimmedCopy() *Transaction {
 	txCopy := Transaction{tx.TXID, inputs, outputs, tx.TimeStamp}
 
 	return &txCopy
+}
+
+//具体校验逻辑
+func (tx *Transaction) verify(prevTxs map[string]*Transaction) bool {
+	//1. 获取交易副本txCopy
+	txCopy := tx.trimmedCopy()
+	//2. 遍历交易，inputs，
+	for i, input := range tx.TXInputs {
+		prevTx := prevTxs[string(input.TXID)]
+		if prevTx == nil {
+			return false
+		}
+
+		//3. 还原数据（得到引用output的公钥哈希）获取交易的哈希值
+		output := prevTx.TXOutputs[input.VoutIndex]
+		txCopy.TXInputs[i].PubKey = output.ScriptPubKeyHash
+		txCopy.setHash()
+
+		//清零环境, 设置为nil
+		txCopy.TXInputs[i].PubKey = nil
+
+		//具体还原的签名数据哈希值
+		hashData := txCopy.TXID
+		//签名
+		signature := input.ScriptSig
+		//公钥的字节流
+		pubKey := input.PubKey
+
+		//开始校验
+		var r, s, x, y big.Int
+		//r,s 从signature截取出来
+		r.SetBytes(signature[:len(signature)/2])
+		s.SetBytes(signature[len(signature)/2:])
+
+		//x, y 从pubkey截取除来，还原为公钥本身
+		x.SetBytes(pubKey[:len(pubKey)/2])
+		y.SetBytes(pubKey[len(pubKey)/2:])
+		curve := elliptic.P256()
+		pubKeyRaw := ecdsa.PublicKey{Curve: curve, X: &x, Y: &y}
+
+		//进行校验
+		res := ecdsa.Verify(&pubKeyRaw, hashData, &r, &s)
+		if !res {
+			fmt.Println("发现校验失败的input!")
+			return false
+		}
+	}
+	//4. 通过tx.ScriptSig, tx.PubKey进行校验
+	fmt.Println("交易校验成功!")
+
+	return true
 }
