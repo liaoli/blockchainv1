@@ -45,7 +45,7 @@ func NewWalletKeyPair() *Wallet {
 func (w *Wallet) getAddress() string {
 	//公钥
 	pubKey := w.PubKey
-	//hash1 := sha256.Sum256(pubKey)
+	//hash1 := sha256.Sum256(PubKey)
 	////hash160处理
 	////hasher := crypto.RIPEMD160.New()
 	//

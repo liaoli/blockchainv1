@@ -2,9 +2,12 @@ package main
 
 import (
 	"bytes"
+	"crypto/ecdsa"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/gob"
 	"fmt"
+	"time"
 )
 
 //引用utxo所在交易的ID
@@ -23,7 +26,7 @@ type TXInput struct {
 
 	ScriptSig []byte //对应当前交易的签名
 
-	pubKey []byte //付款公钥
+	PubKey []byte //付款公钥
 }
 
 //包含资金接收方的相关信息,包含：
@@ -59,6 +62,9 @@ type Transaction struct {
 
 	//交易输入，可能是多个
 	TXOutputs []TXOutput
+
+	//时间戳
+	TimeStamp uint64
 }
 
 func NewTransaction(from, to string, amount float64, bc BlockChain) *Transaction {
@@ -78,7 +84,7 @@ func NewTransaction(from, to string, amount float64, bc BlockChain) *Transaction
 		return nil
 	}
 	fmt.Println("找到付款人的私钥和公钥，准备创建交易")
-
+	priKey := wallet.PriKey
 	pubKey := wallet.PubKey
 	//w我们所有的output 都是由公钥哈希锁定的，所以去查找付款人的output时，也需要提供付款人的公钥哈希
 	pubKeyHash := getPubKeyHashFromPubKey(pubKey)
@@ -127,9 +133,15 @@ func NewTransaction(from, to string, amount float64, bc BlockChain) *Transaction
 		nil,
 		inputs,
 		outputs,
-		//timeStamp,
+		uint64(time.Now().Unix()),
 	}
 	tx.setHash()
+
+	if !bc.signTransaction(&tx, priKey) {
+		fmt.Println("签名失败")
+		return nil
+	}
+
 	return &tx
 }
 
@@ -156,12 +168,11 @@ func NewCoinbaseTx(address string, data string) *Transaction {
 
 	output := NewTxOutput(address, reward)
 
-	txTmp := Transaction{nil, []TXInput{input}, []TXOutput{output}}
+	txTmp := Transaction{nil, []TXInput{input}, []TXOutput{output}, uint64(time.Now().Unix())}
 
 	txTmp.setHash()
 
 	return &txTmp
-
 }
 
 func (tx *Transaction) isCoinBaseTx() bool {
@@ -172,4 +183,78 @@ func (tx *Transaction) isCoinBaseTx() bool {
 		return true
 	}
 	return false
+}
+
+//实现具体签名动作（copy，设置为空，签名动作）
+//参数1：私钥
+//参数2：inputs所引用的output所在的交易集合：
+//>key:交易id
+//>value:交易本身
+func (tx *Transaction) sign(priKey *ecdsa.PrivateKey, preTxs map[string]*Transaction) bool {
+
+	fmt.Println("具体交易签名")
+
+	if tx.isCoinBaseTx() {
+		fmt.Println("找到挖矿交易，无需签名")
+		return true
+	}
+	//1.获取copy，PubKey，ScriptPubKey字段置空
+	txCopy := tx.trimmedCopy()
+	//2.遍历交易的inputs for
+	for i, input := range txCopy.TXInputs {
+		fmt.Printf("开始对input[%d]进行签名", i)
+
+		preTx := preTxs[string(input.TXID)]
+		if preTx == nil {
+			return false
+		}
+
+		output := preTx.TXOutputs[input.VoutIndex]
+		//>	获取引用的output的公钥哈希
+		txCopy.TXInputs[i].PubKey = output.ScriptPubKeyHash
+		//>对copy交易进行签名
+		txCopy.setHash()
+
+		hashData := txCopy.TXID //我们去签名的具体数据
+
+		//开始签名
+
+		r, s, err := ecdsa.Sign(rand.Reader, priKey, hashData)
+
+		if err != nil {
+			fmt.Println("签名错误：", err)
+			return false
+		}
+		signature := append(r.Bytes(), s.Bytes()...)
+
+		//>将数字签名赋值给原始的tx
+		tx.TXInputs[i].ScriptSig = signature
+
+		//>将input的pubKey字段设置为nil
+		txCopy.TXInputs[i].PubKey = nil
+	}
+	fmt.Println("交易签名成功")
+	//交易签名成
+	return true
+}
+
+//trimmedCopy 修剪备用
+func (tx *Transaction) trimmedCopy() *Transaction {
+	var inputs []TXInput
+	var outputs []TXOutput
+	for _, input := range tx.TXInputs {
+		in := TXInput{
+			input.TXID,
+			input.VoutIndex,
+			nil,
+			nil,
+		}
+		inputs = append(inputs, in)
+	}
+
+	outputs = tx.TXOutputs
+
+	txCopy := Transaction{tx.TXID, inputs, outputs, tx.TimeStamp}
+
+	return &txCopy
 }

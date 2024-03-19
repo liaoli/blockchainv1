@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"github.com/boltdb/bolt"
@@ -195,7 +196,7 @@ func (bc *BlockChain) FindMyUTXO(pubKeyHash []byte) []UTXOInfo {
 			if !tx.isCoinBaseTx() {
 				//非挖矿交易才遍历
 				for inputIndex, input := range tx.TXInputs {
-					if bytes.Equal(getPubKeyHashFromPubKey(input.pubKey), pubKeyHash) /*付款人的公钥*/ {
+					if bytes.Equal(getPubKeyHashFromPubKey(input.PubKey), pubKeyHash) /*付款人的公钥*/ {
 						fmt.Println("inputIndex:", inputIndex)
 						spentKey := string(input.TXID)
 						spentUTXOs[spentKey] = append(spentUTXOs[spentKey], input.VoutIndex)
@@ -236,4 +237,45 @@ func (bc *BlockChain) FindNeedUTXO(pubKeyHash []byte, amount float64) (map[strin
 	}
 
 	return retMap, retValue
+}
+
+//交易签名函数
+func (bc BlockChain) signTransaction(tx *Transaction, priKey *ecdsa.PrivateKey) bool {
+	fmt.Println("开始签名交易")
+	//根据传递进来的tx 得到所有需要的前交易preTxs
+	preTxs := make(map[string]*Transaction)
+	//遍历账本，找到所有需要的交易集合
+	for _, input := range tx.TXInputs {
+		pretx := bc.findTransaction(input.TXID)
+
+		if pretx == nil {
+			fmt.Println("没有找到有效引用的交易")
+			return false
+		}
+
+		fmt.Println("到有效引用的交易")
+		//容易错误：tx.TXID
+		preTxs[string(input.TXID)] = pretx
+	}
+
+	return tx.sign(priKey, preTxs)
+}
+
+func (bc *BlockChain) findTransaction(txid []byte) *Transaction {
+	//遍历区块，遍历账本，比较txid与交易id，如果相同，返回交易，反之返回nil
+	it := bc.NewIterator()
+
+	for {
+		block := it.GetBlockAnMoveLeft()
+		for _, tx := range block.Transactions {
+			if bytes.Equal(tx.TXID, txid) {
+				return tx
+			}
+		}
+
+		if len(block.PreHash) == 0 {
+			break
+		}
+	}
+	return nil
 }
